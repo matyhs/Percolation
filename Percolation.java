@@ -6,7 +6,7 @@ public class Percolation
 {
     private WeightedQuickUnionUF grid;
     private boolean[][] openSites;
-    private boolean[][] percolate;
+    private boolean[][] fullSites;
     private int count;
     private int size;
 
@@ -16,14 +16,14 @@ public class Percolation
         size = n;
         grid = new WeightedQuickUnionUF(n*n);
         openSites = new boolean[n][n];
-        percolate = new boolean[n][n];
+        fullSites = new boolean[n][n];
 
         for(int i = 0; i < n; i++)
         {
             for(int j = 0; j < n; j++)
             {
                 openSites[i][j] = false;
-                percolate[i][j] = false;
+                fullSites[i][j] = false;
             }
         }
     }
@@ -35,36 +35,7 @@ public class Percolation
         {
             openSites[row][col] = true;
             count++;
-
-            if (row - 1 >= 0 && isOpen(row-1, col))
-            {
-                int parent = translate(row-1) + col;
-                int child = translate(row) + col;
-                grid.union(parent, child);
-            }
-
-            if (row + 1 < translate(grid.count()) && isOpen(row + 1, col))
-            {
-                int parent = translate(row+1) + col;
-                int child = translate(row) + col;
-                grid.union(parent, child);
-            }
-
-            if (col - 1 >= 0 && isOpen(row, col - 1))
-            {
-                int parent = translate(row) + col - 1;
-                int child = translate(row) + col;
-                grid.union(parent, child);
-            }
-
-            if (col + 1 < translate(grid.count()) && isOpen(row, col + 1))
-            {
-                int parent = translate(row) + col + 1;
-                int child = translate(row) + col;
-                grid.union(parent, child);
-            }
-
-            percolate[row][col] = isFull(row, col);
+            connectSites(row, col);
         }
     }
 
@@ -77,7 +48,7 @@ public class Percolation
     // is the site (row, col) full?
     public boolean isFull(int row, int col)
     {
-        return grid.find(translate(row)+col) / size < 1;
+       return fullSites[row][col];
     }
 
     // returns the number of open sites
@@ -89,14 +60,18 @@ public class Percolation
     // does the system percolate?
     public boolean percolates()
     {
-        boolean isPercolated = false;
-
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
-            isPercolated = isPercolated && percolate[size][i];
+            connectFullSites(0, i);
+
+            if(isFull(size-1, i))
+            {
+                return true;
+            }
         }
 
-        return isPercolated;
+        fullSites = new boolean[size][size];
+        return false;
     }
 
     private int translate(int index)
@@ -104,18 +79,91 @@ public class Percolation
         return index * size;
     }
 
+    private void connectSites(int row, int col)
+    {
+        if (row - 1 >= 0 && isOpen(row-1, col))
+        {
+            int parent = translate(row-1) + col;
+            int child = translate(row) + col;
+
+            if (!connected(parent, child))
+            {
+                grid.union(parent, child);
+                connectSites(row-1, col);
+            }
+        }
+
+        if (row + 1 < size && isOpen(row + 1, col))
+        {
+            int parent = translate(row+1) + col;
+            int child = translate(row) + col;
+            
+            if (!connected(parent, child))
+            {
+                grid.union(parent, child);
+                connectSites(row+1, col);
+            }
+        }
+
+        if (col - 1 >= 0 && isOpen(row, col - 1))
+        {
+            int parent = translate(row) + col - 1;
+            int child = translate(row) + col;
+
+            if (!connected(parent, child))
+            {
+                grid.union(parent, child);
+                connectSites(row, col - 1);
+            }
+        }
+
+        if (col + 1 < size && isOpen(row, col + 1))
+        {
+            int parent = translate(row) + col + 1;
+            int child = translate(row) + col;
+            
+            if (!connected(parent, child))
+            {
+                grid.union(parent, child);
+                connectSites(row, col+1);
+            }
+        }
+    }
+
+    private boolean connected(int parent, int child)
+    {
+        return grid.find(parent) == grid.find(child);
+    }
+
+    private void connectFullSites(int row, int col)
+    {
+        if (row >= size) return;
+        if (row < 0) return;
+        if (col >= size) return;
+        if (col < 0) return;
+        if (!isOpen(row, col)) return;
+        if (isFull(row, col)) return;
+
+        fullSites[row][col] = true;
+        connectFullSites(row-1, col);
+        connectFullSites(row+1, col);
+        connectFullSites(row, col-1);
+        connectFullSites(row, col+1);
+    }
+
     // test client (optional)
     public static void main(String[] args)
     {
         int n = StdIn.readInt();
         Percolation percolation = new Percolation(n);
-        while (!StdIn.isEmpty()) {
+        for (int i = 0; i < n; i++) {
             int p = StdIn.readInt();
             int q = StdIn.readInt();
             percolation.open(p, q);
             StdOut.println(p + " " + q);
-            StdOut.println(percolation.numberOfOpenSites() + " components");
-            StdOut.println(percolation.percolates());
         }
+        
+        StdOut.println(percolation.numberOfOpenSites() + " components");
+        StdOut.println(percolation.percolates());
     }
 }
