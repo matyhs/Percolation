@@ -4,8 +4,9 @@ import edu.princeton.cs.algs4.StdStats;
 
 public class PercolationStats
 {
-    private double[] openSites;
-    private int _trials;
+    private static final double CONFIDENCE_LEVEL = 1.96;
+    private final double[] openSites;
+    private final int trials;
 
     // perform independent trials on an n-by-n grid
     public PercolationStats(int n, int trials)
@@ -16,15 +17,15 @@ public class PercolationStats
         }
 
         openSites = new double[trials];
-        _trials = trials;
+        this.trials = trials;
 
-        for(int i = 0; i < trials; i++)
+        for (int i = 0; i < trials; i++)
         {
             Percolation percolation = new Percolation(n);
             
-            while(!percolation.percolates())
+            while (!percolation.percolates())
             {
-                percolation.open(StdRandom.uniform(n), StdRandom.uniform(n));
+                percolation.open(StdRandom.uniform(1, n + 1), StdRandom.uniform(1, n + 1));
             }
 
             openSites[i] = percolation.numberOfOpenSites() * 1.0 / (n*n);
@@ -47,23 +48,22 @@ public class PercolationStats
     // low endpoint of 95% confidence interval
     public double confidenceLo()
     {
-        return mean() - (1.96 * stddev()/Math.sqrt(_trials));
+        return mean() - (CONFIDENCE_LEVEL * stddev()/Math.sqrt(trials));
     }
 
     // high endpoint of 95% confidence interval
     public double confidenceHi()
     {
-        return mean() + (1.96 * stddev()/Math.sqrt(_trials));
+        return mean() + (CONFIDENCE_LEVEL * stddev()/Math.sqrt(trials));
     }
 
    // test client (see below)
    public static void main(String[] args)
    {
-        PercolationStats stats = new PercolationStats(Integer.parseInt(args[0])
-                                                        , Integer.parseInt(args[1]));
+        PercolationStats stats = new PercolationStats(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
 
         StdOut.println("mean                        = " + stats.mean());
         StdOut.println("stddev                      = " + stats.stddev());
-        StdOut.println("95% confidence interval     = [" + stats.confidenceLo() + ", " + stats.confidenceHi());
+        StdOut.println("95% confidence interval     = [" + stats.confidenceLo() + ", " + stats.confidenceHi() + "]");
    }
 }
