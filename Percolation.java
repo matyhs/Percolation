@@ -7,6 +7,7 @@ public class Percolation
     private final WeightedQuickUnionUF grid;
     private boolean[][] openSites;
     private boolean[][] fullSites;
+    private boolean[][] visitedSites;
     private int count;
     private final int size;
 
@@ -22,6 +23,7 @@ public class Percolation
         grid = new WeightedQuickUnionUF(n*n);
         openSites = new boolean[n][n];
         fullSites = new boolean[n][n];
+        visitedSites = new boolean[n][n];
 
         for (int i = 0; i < n; i++)
         {
@@ -29,6 +31,7 @@ public class Percolation
             {
                 openSites[i][j] = false;
                 fullSites[i][j] = false;
+                visitedSites[i][j] = false;
             }
         }
     }
@@ -49,6 +52,8 @@ public class Percolation
             openSites[rowConvert][colConvert] = true;
             count++;
             connectSites(row, col);
+            connectFullSites(row, col, 0);
+            visitedSites = new boolean[size][size];
         }
     }
 
@@ -89,18 +94,7 @@ public class Percolation
     // does the system percolate?
     public boolean percolates()
     {
-        for (int i = 1; i <= size; i++)
-        {
-            connectFullSites(1, i);
-
-            if (isFull(size, i))
-            {
-                return true;
-            }
-        }
-
-        fullSites = new boolean[size][size];
-        return false;
+        return isFullSite(size, 1);
     }
 
     private int translate(int index)
@@ -118,7 +112,7 @@ public class Percolation
             int parent = translate(rowConvert-1) + colConvert;
             int child = translate(rowConvert) + colConvert;
 
-            if (connected(parent, child))
+            if (!connected(parent, child))
             {
                 grid.union(parent, child);
                 connectSites(row-1, col);
@@ -167,20 +161,29 @@ public class Percolation
         return grid.find(parent) == grid.find(child);
     }
 
-    private void connectFullSites(int row, int col)
+    private void connectFullSites(int row, int col, int topSiteIndex)
     {
         int rowConvert = indexConvert(row);
         int colConvert = indexConvert(col);
 
         if (!validateArguments(rowConvert, colConvert)) return;
+        if (topSiteIndex >= size) return;
         if (!isOpen(row, col)) return;
         if (isFull(row, col)) return;
+        if (visitedSites[rowConvert][colConvert]) return;
 
-        fullSites[rowConvert][colConvert] = true;
-        connectFullSites(row-1, col);
-        connectFullSites(row+1, col);
-        connectFullSites(row, col-1);
-        connectFullSites(row, col+1);
+        fullSites[rowConvert][colConvert] = connected(topSiteIndex, translate(rowConvert)+colConvert);
+
+        if (!fullSites[rowConvert][colConvert])
+        {
+            connectFullSites(row, col, topSiteIndex+1);
+        }
+        
+        visitedSites[rowConvert][colConvert] = true;
+        connectFullSites(row-1, col, topSiteIndex);
+        connectFullSites(row+1, col, topSiteIndex);
+        connectFullSites(row, col-1, topSiteIndex);
+        connectFullSites(row, col+1, topSiteIndex);
     }
 
     private boolean validateArguments(int row, int col)
@@ -196,6 +199,24 @@ public class Percolation
     private int indexConvert(int index)
     {
         return index - 1;
+    }
+
+    private boolean isFullSite(int row, int col)
+    {
+        int rowConvert = indexConvert(row);
+        int colConvert = indexConvert(col);
+
+        if (!validateArguments(rowConvert, colConvert))
+        {
+            return false;
+        }
+
+        if (isFull(row, col))
+        {
+            return true;
+        }
+
+        return isFullSite(row, col+1);
     }
 
     // test client (optional)

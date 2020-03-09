@@ -7,6 +7,8 @@ public class PercolationStats
     private static final double CONFIDENCE_LEVEL = 1.96;
     private final double[] openSites;
     private final int trials;
+    private double mean;
+    private double stddev;
 
     // perform independent trials on an n-by-n grid
     public PercolationStats(int n, int trials)
@@ -36,25 +38,27 @@ public class PercolationStats
     // sample mean of percolation threshold
     public double mean()
     {
-        return StdStats.mean(openSites);
+        mean = StdStats.mean(openSites);
+        return mean;
     }
 
     // sample standard deviation of percolation threshold
     public double stddev()
     {
-        return StdStats.stddev(openSites);
+        stddev = StdStats.stddev(openSites);
+        return stddev;
     }
 
     // low endpoint of 95% confidence interval
     public double confidenceLo()
     {
-        return mean() - (CONFIDENCE_LEVEL * stddev()/Math.sqrt(trials));
+        return mean - (CONFIDENCE_LEVEL * stddev/Math.sqrt(trials));
     }
 
     // high endpoint of 95% confidence interval
     public double confidenceHi()
     {
-        return mean() + (CONFIDENCE_LEVEL * stddev()/Math.sqrt(trials));
+        return mean + (CONFIDENCE_LEVEL * stddev/Math.sqrt(trials));
     }
 
    // test client (see below)
